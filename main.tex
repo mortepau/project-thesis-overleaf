@@ -1,0 +1,54 @@
+\documentclass[a4paper, 10pt]{article}
+
+% Load all packages, defines and commands
+\usepackage{configuration/setup}
+
+% Add list of abbreviations
+\import{source/}{abbreviations}
+
+% Add list of symbols
+\import{source/}{symbols}
+
+% Actually make the list of symbols and abbreviations
+\makeglossaries
+
+\begin{document}
+
+% Title page
+\subfile{source/front}
+
+% Insert table of contents
+\tableofcontents
+
+% List of figures
+\listoffigures
+
+% List of tables
+\listoftables
+
+% List of abbreviations
+% Reference to it by using \gls{<reference>}
+\printglossary[type=\acronymtype, title=Abbreviations]
+
+% List of symbols
+\printglossary[title=Symbols]
+
+\subfile{source/abstract}
+\subfile{source/introduction}
+\subfile{source/background}
+\subfile{source/methodology}
+\subfile{source/implementation}
+\subfile{source/discussion}
+\subfile{source/conclusion}
+\subfile{source/related_work}
+
+\newpage
+
+% Insert bibliography
+\bibliographystyle{IEEEtran}
+\bibliography{source/references}
+
+% TODO: Add appendices
+\addappendix
+
+\end{document}

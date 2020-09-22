@@ -1,0 +1,68 @@
+\ProvidesPackage{configuration/commands}[2020/08/24 Commands]
+
+% Add appendix with specific settings
+\newcommand{\addappendix}{
+    \newpage
+    \appendix
+    \section*{Appendix}
+    \addcontentsline{toc}{section}{Appendix}
+    \renewcommand{\thesubsection}{\Alpha{subsection}}
+}
+
+% Easily insert source to images
+\newcommand{\source}[1]{
+    \vspace{-4pt}
+    \caption*{
+        \hfill
+        \footnotesize{Source: {#1}}
+    }
+}
+
+% Macro for creating two images next to each other
+\pgfkeys{
+    /doublefigure/.is family, /doublefigure,
+    % Default values
+    default/.style = {
+        position     = ht,
+        widthLeft    = 0.49,
+        labelLeft    = fig:label,
+        captionLeft  = ,
+        widthRight   = 0.49,
+        labelRight   = fig:label,
+        captionRight = 
+    },
+    position/.estore     in = \doublefigurePosition,
+    % Left figure
+    widthLeft/.estore    in = \doublefigureLWidth,
+    captionLeft/.estore  in = \doublefigureLCaption,
+    labelLeft/.estore    in = \doublefigureLLabel,
+    % Right figure
+    widthRight/.estore   in = \doublefigureRWidth,
+    captionRight/.estore in = \doublefigureRCaption,
+    labelRight/.estore   in = \doublefigureRLabel,
+}
+\newcommand{\doublefigure}[3][]{%
+    \pgfkeys{/doublefigure, default, #1}%
+    \expandafter\figure\expandafter[\doublefigurePosition]
+        \centering
+        \begin{minipage}[h]{\doublefigureLWidth\textwidth}
+            \includegraphics[width=\textwidth]{#2}
+            \caption{\doublefigureLCaption}
+            \label{\doublefigureLLabel}
+        \end{minipage}
+        \begin{minipage}[h]{\doublefigureRWidth\textwidth}
+            \includegraphics[width=\textwidth]{#3}
+            \caption{\doublefigureRCaption}
+            \label{\doublefigureRLabel}
+        \end{minipage}
+    \end{figure}
+}
+
+% Change TOC heading
+\renewcommand*\contentsname{Table of Contents}
+
+% Change figure list heading
+\renewcommand{\listfigurename}{List of Figures}
+
+% Change table list heading
+\renewcommand{\listtablename}{List of Tables}

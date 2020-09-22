@@ -1,0 +1,77 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+\section{Background}%
+\label{sec:background}
+
+To understand all the separate parts of the oSDFT algorithm it is necessary to understand where the different parts come from. Firstly, the FFT is explained, then the transition from FFT to DFT is explained, after that the step from DFT to sDFT is gone through. Lastly it will build up to the different parts of the oSDFT algorithm.
+The second part of the background goes through some useful terms to know about in regard to the HDL implementation.
+
+\subsection{Fourier Transform}%
+\label{sub:fourier_transform}
+
+The Fourier Transform is a transformation that takes a function and converts it to its z-plane equivalent
+
+\begin{equation}
+    \label{eq:fourier_transform}
+    X(f) = \int_{-\infty}^{\infty} x(t) e^{-j 2 \pi f t} dt 
+\end{equation}
+
+
+\subsection{DFT}%
+\label{sub:dft}
+
+In any digital system it is impossible to use continuous values 
+
+\subsection{sDFT}%
+\label{sub:sdft}
+
+To understand the algorithm presented in \cite{osdft} it is necessary to understand the basics of the Fourier Transform and the Discrete Fourier Transformation (DFT).
+
+In its simplest form the DFT takes a complex or real sequence $$x = \{x(n), x(n-1), \ldots, x(n-M+1), x(n-M)\}$$ of length $M$ and transforms it into a complex sequence $X_n(k)$ of length $M$. The transformation is shown in \eqref{eq:dft}.
+  
+\begin{equation}
+    \label{eq:dft}
+    \begin{split}
+        X_n(k) &= \sum_{m=0}^{M-1} x(\hat{n}+m) e^{\frac{-j 2 \pi k m}{M}} \\
+        X_n(k) &= \sum_{m=0}^{M-1} x(\hat{n}+m)W_M^{-mk}
+    \end{split}
+\end{equation}
+
+Where $\hat{n} = n - M + 1$.
+
+Equation \eqref{eq:dft} can be rewritten as equation \eqref{eq:sdft} by finding the similarities between consequent time indexes $n$, as shown in \eqref{eq:sdft-adjacent}.
+
+For time index $n$ we have that $X_n(k)$ is as shown in equation \eqref{eq:X_n} and for time index $n+1$ it is as shown in equation \eqref{eq:X_n+1}.
+
+\begin{align}
+    X_n(k) &= x(\hat{n}) + x(\hat{n}+1)W_M^{-k} + \ldots + x(\hat{n}+M-1)W_M^{-(M-1)k} \label{eq:X_n}\\
+    X_{n+1}(k) &= x(\hat{n}+1) + x(\hat{n}+2)W_M^{-k} + \ldots + x(\hat{n}+M)W_M^{-(M-1)k} \label{eq:X_n+1}
+\end{align}
+
+Multiplying $X_n(k)$ from equation \eqref{eq:X_n} with $W_M^{k}$ we get the following equation, \eqref{eq:X_n-m-W_M}
+
+\begin{equation}
+    \label{eq:X_n-m-W_M}
+    X_n(k)W_M^{k} = x(\hat{n})W_M^{k} + x(\hat{n}+1) + \ldots + x(\hat{n}+M-1)W_M^{-(M-2)k}
+\end{equation}
+
+By comparing equation \eqref{eq:X_n+1} and \eqref{eq:X_n-m-W_M} we can see that $X_{n+1}(k)$ can be written as a function of $X_n(k)$, see equation \eqref{eq:sdft-adjacent}.
+
+\begin{align}
+    X_{n+1}(k) &= x(\hat{n}+1) + x(\hat{n}+2)W_M^{-k} + \ldots + x(\hat{n}+M)W_M^{-(M-1)k} \nonumber\\
+    X_{n+1}(k) &= X_n(k)W_M^{k} - x(\hat{n})W_M^{k} + x(\hat{n}+M)W_M^{-(M-1)k} \nonumber\\
+    X_{n+1}(k) &= W_M^{k} ( X_n(k) - x(\hat{n}) + x(\hat{n}+M)W_M^{-Mk} ) \nonumber\\
+    X_{n+1}(k) &= W_M^{k} ( X_n(k) - x(\hat{n}) + x(\hat{n}+M) ) \label{eq:sdft-adjacent}
+\end{align}
+
+By using Euler's formula and that $W_M^{-Mk} = e^{-j 2 \pi k} = 1$ for all $k = 0,1,2,\ldots$, the last step in equation \eqref{eq:sdft-adjacent} is achieved.
+
+Lastly, by substituting back $\hat{n} = n - M + 1$ and using $n$ instead of $n+1$ on the left-hand-side the final result is equation \eqref{eq:sdft}.
+
+\begin{equation}
+    \label{eq:sdft}
+    X_n(k) = W_M^{k} (X_{n-1}(k) + x(n) - x(n-M))
+\end{equation}
+
+\end{document}

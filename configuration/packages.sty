@@ -1,0 +1,125 @@
+% Package name and version
+\ProvidesPackage{configuration/packages}[2020/08/24 Packages]
+
+% --- Encoding and language
+
+% UTF-8 encoding
+\usepackage[utf8]{inputenc}
+% Font encoding, add accented characters etc.
+\usepackage[T1]{fontenc}
+
+% Use latin modern font family
+\usepackage{lmodern}
+
+% Add text symbols
+\usepackage{textcomp}
+
+% Typographical rules for languages
+\usepackage[english]{babel}
+
+% Improve parskip and parindent commands
+\usepackage{parskip}
+
+% Text adjustments
+\usepackage[
+    protrusion = true,
+    expansion,
+    final,
+    tracking = true,
+    spacing  = true,
+    factor   = 1100,
+    stretch  = 10,
+    shrink   = 10
+]{microtype}
+\microtypecontext{spacing=nonfrench}
+
+% --- Graphics
+
+% Add H as float specifier
+\usepackage{float}
+
+% Enhanced support for graphics
+\usepackage{graphicx}
+% TODO: \graphicspath{{images/}{../images}}
+
+% Add option to use multiple rows for a single cell in a table
+\usepackage{multirow}
+
+% Improved tables
+\usepackage{booktabs}
+
+% Write multipage tables
+\usepackage{longtable}
+
+% Option to customize captions of floating environments
+\usepackage[
+    font      = small,
+    labelfont = bf,
+]{caption}
+
+% Option to add subcaption to subfigures
+\usepackage{subcaption}
+
+\usepackage[
+    colorlinks = true,
+    allcolors  = blue,
+]{hyperref}
+% TODO: urlstyle
+
+% Add vector graphic tool
+\usepackage{tikz}
+% TODO: usetikzlibrary
+
+% Code highlighting
+\usepackage{minted}
+
+% --- Mathematics
+
+% Enhancements for information structure, etc., for mathematical formulas
+\usepackage{amsmath}
+
+% Mathematical symbols
+\usepackage{amssymb}
+
+% Bold in mathematic formulas
+\usepackage{bm}
+
+% Macros for typesettings equations for vector calculus and linear algebra
+\usepackage{physics}
+
+% Inline fractions are formatted nicely
+\usepackage{nicefrac}
+
+% SI units
+\usepackage{siunitx}
+% TODO: sisetup
+
+% --- Document
+
+% Formatting appendix titles
+\usepackage{appendix}
+% TODO: Custom command
+
+\usepackage[
+    nonumberlist, % Do not show page numbers
+    acronym,      % Generate acronym listing
+    toc,          % Show listings as entries in TOC
+    section       % Use section level for TOC entries
+]{glossaries}
+
+% Add bibliography, index and contents to TOC
+\usepackage{tocbibind}
+
+% Simple customization of header and footer
+\usepackage{fancyhdr}
+
+% --- File management
+
+% Block comment
+\usepackage{comment}
+
+% Input relative to directory
+\usepackage{import}
+
+% Multi-file structure, best loaded last
+\usepackage{subfiles}

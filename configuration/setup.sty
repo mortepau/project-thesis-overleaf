@@ -1,0 +1,29 @@
+% Package name and version 
+\ProvidesPackage{configuration/setup}[2020/08/24 Setup]
+
+% Include the other .sty-files 
+\RequirePackage{configuration/packages}
+\RequirePackage{configuration/defines}
+\RequirePackage{configuration/commands}
+
+% Possible font families
+\DeclareOption{roman}{
+    \renewcommand{\familydefault}{\rmdefault}
+}
+\DeclareOption{sans}{
+    \renewcommand{\familydefault}{\sfdefault}
+}
+\DeclareOption{mono}{
+    \renewcommand{\familydefault}{\ttdefault}
+}
+% Default option
+\ExecuteOptions{roman}
+
+% Stop processing end-user parameters/options
+\ProcessOptions\relax
+
+% Add path to images
+\graphicspath{{assets/images}{../assets/images}}
+
+% Has to be the last command
+\endinput
