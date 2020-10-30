@@ -1,27 +1,154 @@
 \documentclass[../main.tex]{subfiles}
 
+% TODO: Rearrange to something like:
+%   Fourier Series
+%       continuous
+%       discrete
+%   Fourier Transform
+%       continuous
+%       discrete
+%   sliding DFT
+%   oSDFT
+%   FFT (for comparison purposes)
+%   Anything HW related
+
 \begin{document}
 \section{Background}%
 \label{sec:background}
 
-To understand all the separate parts of the oSDFT algorithm it is necessary to understand where the different parts come from. Firstly, the FFT is explained, then the transition from FFT to DFT is explained, after that the step from DFT to sDFT is gone through. Lastly it will build up to the different parts of the oSDFT algorithm.
-The second part of the background goes through some useful terms to know about in regard to the HDL implementation.
+To fully understand the oSDFT algorithm it is necessary to understand the underlying concepts as well. 
+Firstly, we will explain what Fourier Transform is and why it is useful for signal processing.
+After that we will go through the Discrete Fourier Transform (DFT) and then its transition to sliding DFT (sDFT).
+Then we will step through the different parts of the oSDFT algorithm.
+Lastly, e will explain what the Fast Fourier Transform (FFT) is as this will be used in the evaluation of our implementation.
+
+% TODO: Maybe add something about SystemVerilog or power saving?
+
+%\subsection{Fourier Series}%
+%\label{sub:fourier_series}
+
+%\subsubsection{Continuous-time Fourier Series}%
+%\label{subsub:ct_fourier_series}
+
+%\subsubsection{Discrete-time Fourier Series}%
+%\label{subsub:dt_fourier_series}
 
 \subsection{Fourier Transform}%
 \label{sub:fourier_transform}
 
-The Fourier Transform is a transformation that takes a function and converts it to its z-plane equivalent
+The Fourier Transform is a function that decomposes a continuous-time aperiodic signal into its exponential or sinusoidal components.
+The decomposed signal is represented in the so-called frequency domain \cite{digital_signal_processing}.
 
 \begin{equation}
     \label{eq:fourier_transform}
     X(f) = \int_{-\infty}^{\infty} x(t) e^{-j 2 \pi f t} dt 
 \end{equation}
 
+The Fourier Transform is based on Fourier Series, which considers continuous-time periodic signals.
+The general formula for the continuous-time Fourier Series (CTFS) is shown in \eqref{eq:fourier_series}.
+
+\begin{equation}
+    \label{eq:fourier_series}
+    x(t) = \sum_{k = -\infty}^{\infty} c_k e^{j 2 \pi k F_0 t} 
+\end{equation}
+
+where $c_k$ is found through \eqref{eq:fourier_series_coeff}.
+
+\begin{equation}
+        \label{eq:fourier_series_coeff}
+        c_k = \frac{1}{T_p} \int_{-\infty}^{\infty} x(t) e^{- j 2 \pi k F_0 t} dt
+\end{equation}
+
+To transition from the CTFS \eqref{eq:fourier_series} to Fourier Transform \eqref{eq:fourier_transform} we consider a continuous-time aperiodic signal $x(t)$ with finite duration and replicate it with a period of $T_p$ so we then get the signal $x_p(t)$ which is periodic with a period $T_p$, see \autoref{fig:fourier_series_aperiodic} and \autoref{fig:fourier_series_periodic}.
+It can be seen that if we increase the period $T_p$ $x_p(t)$ gets closer to $x(t)$, so
+$$x(t) = \lim_{T_p\to\infty}x_p(t)$$.
+This implies that we can find the spectrum of $x(t)$ from $x_p(t)$ when $T_p \to \infty$.
+
+\begin{equation}
+    \label{eq:fourier_series_periodic}
+    x_p(t) &= \sum_{k = -\infty}^{\infty} c_k e^{j 2 \pi k F_0 t} \text{, } F_0 = \frac{1}{T_p}
+\end{equation}
+
+where
+
+\begin{equation*}
+    c_k = \frac{1}{T_p} \int_{-T_p/2}^{T_p/2} x_p(t) e^{- j 2 \pi k F_0 t} dt
+\end{equation*}
+
+By using that $x(t) = x_p(t) \text{ for } t \in [-T_p/2, T_p/2]$, we get that $c_k$ equals
+
+\begin{equation*}
+    c_k = \frac{1}{T_p} \int_{-T_p/2}^{T_p/2} x(t) e^{- j 2 \pi k F_0 t} dt
+\end{equation*}
+
+Since $x(t) = 0 \text{ for } t < -T_p/2 \text{ and } T_p/2 < t$, we can extend the integration limits
+
+\begin{equation}
+    \label{eq:fourier_series_coeff_before_insertion}
+    c_k = \frac{1}{T_p} \int_{-\infty}^{\infty} x(t) e^{- j 2 \pi k F_0 t} dt
+\end{equation}
+
+If we compare \eqref{eq:fourier_series_coeff_before_insertion} and \eqref{eq:fourier_transform} we can substitute \eqref{eq:fourier_transform} with $f=kF_0$ into \eqref{eq:fourier_series_coeff_before_insertion}.
+
+\begin{equation}
+    \label{eq:fourier_series_coeff_after_insertion}
+    c_k = \frac{1}{T_p} X(kF_0)
+\end{equation}
+
+Inserting \eqref{eq:fourier_series_coeff_after_insertion} into \eqref{eq:fourier_series_periodic} and using that $F_0 = \frac{1}{T_p}$ we get
+
+\begin{equation*}
+    x_p(t) = \sum_{k=-\infty}^{\infty} \Delta F X(\frac{k}{\Delta F}) e^{j 2 \pi k \Delta F t}
+\end{equation*}
+
+If we now take the limit when $\Delta F \to 0$ we find that
+
+\begin{equation*}
+    \lim_{T_p \to \infty} x_p(t) = x(t) = \lim_{\Delta F \to 0} \sum_{k = -\infty}^{\infty} X(k \Delta F) e^{j 2 \pi k \Delta F t} \Delta F
+\end{equation*}
+
+Using that $\Delta F = df$ and $\Delta F k = f$ which is a continuous variable so the summation becomes an integral when $\Delta F \to \infty$ we finally get
+
+\begin{equation}
+    x(t) = \int_{-\infty}^{\infty} X(f) e^{j 2 \pi f t} df
+\end{equation}
+
+% TODO: Include picture of x(t) - aperiodic signal and x_p(t) - periodic signal x(t) repeated with a period of T_p
+\doublefigure[,
+    captionLeft=Aperiodic signal $x(t)$.,
+    labelLeft=fig:fourier_series_aperiodic,
+    captionRight=Periodic signal $x_p(t)$ with period $T_p$.,
+    labelRight=fig:fourier_series_periodic,
+]{example-image-a}{example-image-b}
 
 \subsection{DFT}%
 \label{sub:dft}
 
-In any digital system it is impossible to use continuous values 
+The difference between continuous-time signals and discrete-time signals is that the continuous-time signals extend from $-\infty$ to $\infty$ while the discrete-time are restricted to the range $[-\pi, \pi)$ or $[0, 2 \pi)$.
+In \eqref{eq:discrete_fourier_series} we can see the general formula for the discrete-time Fourier Series (DTFS).
+$C_k$ is the fourier series coefficient \eqref{eq:discrete_fourier_series_coeff}
+
+\begin{equation}
+    \label{eq:discrete_fourier_series}
+    x(n) = \sum_{k=0}^{N-1} C_k e^{\frac{j 2 \pi k n}{N}}
+\end{equation}
+
+\begin{equation}
+    \label{eq:discrete_fourier_series_coeff}
+    C_k = \frac{1}{N} \sum_{n=0}^{N-1} x(n) e^{\frac{- j 2 \pi k n}{N}}
+\end{equation}
+
+From the equation \eqref{eq:discrete_fourier_series} we can see that a DTFS can at most have $N$ frequency components, compared to the infinite frequency components the continuous equivalent can have.
+So, the main difference between the DTFS and the CTFS is the number of frequency components they contain.
+
+\begin{equation}
+    \label{eq:discrete_fourier_transform}
+    X(f) = \sum_{n=-\infty}^{\infty} x(n) e^{-j 2 \pi f n}
+\end{equation}
+\begin{equation}
+    \label{eq:inverse_discrete_fourier_transform}
+    x(n) = \int_{0}^{1} X(f) e^{j 2 \pi f n} df
+\end{equation}
 
 \subsection{sDFT}%
 \label{sub:sdft}
@@ -72,6 +199,124 @@ Lastly, by substituting back $\hat{n} = n - M + 1$ and using $n$ instead of $n+1
 \begin{equation}
     \label{eq:sdft}
     X_n(k) = W_M^{k} (X_{n-1}(k) + x(n) - x(n-M))
+\end{equation}
+
+Equation \eqref{eq:sdft} is the typical formulation of the sliding window DFT (sDFT) algorithm.
+
+\subsection{oSDFT}
+\label{sub:osdft}
+
+Starting from equation \eqref{eq:sdft} we can rename $x(n) - x(n-M)$ to $d(n)$ and reformulate it as
+\begin{equation}
+    X_n(k) = W_M^{k} (X_{n-1}(k) + d(n))
+\end{equation}
+
+By using the adjacent windows we can achieve the formula shown in equation \eqref{eq:osdft_dn}
+
+\begin{align}
+    X_n(k) &= W_M^{k} (X_{n-1}(k) + d(n)) \nonumber\\
+    X_n(k) &= W_M^{2k} (X_{n-2}(k) + d(n-1) + W_M^{-k}d(n)) \nonumber\\
+           &. \nonumber\\
+           &. \nonumber\\
+           &. \nonumber\\
+    X_n(k) &= W_M^{Lk} (X_{n-L}(k) + d(n-L+1) + W_M^{-k}d(n-L+2) \ldots W_M^{-(L-1)k}d(n)) \nonumber\\
+    X_n(k) &= W_M^{Lk} (X_{n-L}(k) + D_n(k)) \label{eq:osdft_dn}
+\end{align}
+
+% TODO: Include L=M/4
+
+where $D_n(k)$ is given by equation \eqref{eq:D_n}
+
+\begin{equation}
+    \label{eq:D_n}
+    D_n(k) = \sum_{m=0}^{L-1}d(n-m)W_M^{-mk}
+\end{equation}
+
+The Updating Vector Transform (UVT) is similar to already existing DFT solutions, so it is then possible to reuse traditional FFT algorithms to speed up the calculations.
+One of the optimizations is radix-2 decimation, which divides the L-sized UVT into two L/2-sized UVTs which again can be divided further. The decimation is done until all UVTs are of size $1$.
+
+\begin{align}
+    D_n(k) &=  \sum_{m=0}^{L-1} d(n-m) W_{M}^{-mk} \nonumber\\
+           &=  \sum_{p=0}^{L/2-1} d(n-(2p)) W_{M}^{-(2p)k} + \sum_{p=0}^{L/2-1} d(n-(2p+1)) W_{M}^{-(2p+1)k} \nonumber\\
+           &= D_n^e(k) + W_{M}^{-k} D_n^o(k)
+\end{align}
+
+Where $D_n^e(k)$ and $D_n^o(k)$ respectively denote the even and odd part of $D_n(k)$.
+
+\begin{equation}
+    \label{eq:decimation_even}
+    D_n^e(k) \sum_{p=0}^{L/2-1} d(n-(2p)) W_{M}^{-(2p)k}
+\end{equation}
+
+\begin{equation}
+    \label{eq:decimation_odd}
+    D_n^o(k) \sum_{p=0}^{L/2-1} d(n-(2p+1)) W_{M}^{-(2p)k}
+\end{equation}
+
+This relationship can be represented recursively, see \eqref{eq:D_n_recursive}
+
+\begin{equation}
+    \label{eq:D_n_recursive}
+    D_n^{s_l}(k) = D_n^{[s_l,e]}(k) + W_{M}^{-2^lk}D_n^{[s_l,o]}(k)
+\end{equation}
+
+where $l$, $l = 0, 1, \cdots log_2(L)-1$, is the decimation stage of the UVT and $s_l$ is the l-length sequenctial decimation operation. $[\cdot,\cdot]$ denotes concatenation.
+
+The relationship between adjacent time indexes can be represented as seen in \eqref{eq:D_n_adjacent}.
+Here, $\Tilde{n}$ is the time index of the first element of the decimated sequence used for computen $D_n^{s_l}(k)$.
+
+\begin{align}
+    \label{eq:D_n_adjacent}
+    D_n^{[s_l,e]}(k) &= \sum_{p=0}^{L/2^l-1} d(\Tilde{n} + 2^l(2p))W_{M}^{-2^{(l+1)}pk} \nonumber\\
+                     &= \sum_{p=0}^{L/2^l-1} d(\Tilde{n} - 2^{l} + 2^l(2p+1))W_{M}^{-2^{(l+1)}pk} \nonumber\\
+                     &= D_{n-2^l}^{[s_l,o]}(k) 
+\end{align}
+
+By inserting \eqref{eq:D_n_adjacent} into \eqref{eq:D_n_recursive} we get a formula for $D_n(k)$ which can reuse previous calculations, see \eqref{eq:D_n_suvt}.
+With this formula we can get away with only calculating the odd decimated sequences and reusing the sequence from the $(n-2^l)$th time index as the even ones.
+This structure leads to a similar behaviour as a sliding window, therefore this algorithm is called sliding UVT (SUVT).
+
+\begin{equation}
+    \label{eq:D_n_suvt}
+    D_{n}^{s_l}(k) = D_{n-2^{l}}^{[s_l,o]}(k) + W_{M}^{-2^{l}k} D_{n}^{[s_l,o]}(k)
+\end{equation}
+
+\autoref{fig:suvt} shows how the SUVT is calculated using a butterfly structure.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{example-image-a}
+    \caption{Butterfly structure of the SUVT.}
+    \label{fig:suvt}
+\end{figure}
+
+The last decimation stage, $l = log_2(L) - 1$ can be sped up by using that four intermediate calculations are needed in the last decimation stage regardless of window size.
+These four intermediate values are as seen in \eqref{eq:I}.
+
+\begin{equation}
+    \label{eq:I}
+    I =
+    \begin{cases}
+        I_0 = W_{M}^{-2^{l} \cdot 0 } d(n + L - 1) = d(n + L - 1) \\
+        I_1 = W_{M}^{-2^{l} \cdot 1 } d(n + L - 1) = W_{M}^{-M/8} d(n + L - 1) \\
+        I_2 = W_{M}^{-2^{l} \cdot 2 } d(n + L - 1) = W_{M}^{-M/4} d(n + L - 1) = - j I_0 \\
+        I_3 = W_{M}^{-2^{l} \cdot 3 } d(n + L - 1) = W_{M}^{-3M/8} d(n + L - 1) = -j I_1
+    \end{cases}
+\end{equation}
+
+as $W_{M}^{-M/4} = e^{\frac{-j 2 \pi M}{4 M}} = e^{-j \frac{\pi}{ 2}} = -j$
+
+The cases in \eqref{eq:I} can be further simplified, $I_2 = \Im{I_0} - j \Re{I_0}$ and $I_3 = \Im{I_1} - j \Re{I_1}$.
+Since $I_0$ is the new input sample and $I_2$ and $I_3$ can be found through $I_1$, we only need to compute one value to produce the the four intermediate values.
+If we assume that $d(n + L - 1)$ is a complex number and we know that $W_{M}^{-\frac{M}{8}} = \frac{1}{\sqrt{2}} (1 - j)$, we can see that $I_1$ becomes as shown in \eqref{eq:I_1}
+
+\begin{equation}
+    \label{eq:I_1}
+    I_1 = 
+    \begin{cases}
+        \Re{I_1} = \frac{1}{\sqrt{2}} ( \Re{d(n + L - 1)} + \Im{d(n + L - 1)} ) \\
+        \Im{I_1} = \frac{1}{\sqrt{2}} ( \Im{d(n + L - 1)} - \Re{d(n + L - 1)} ) \\
+    \end{cases}
 \end{equation}
 
 \end{document}
